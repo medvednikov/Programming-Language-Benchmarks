@@ -3,7 +3,7 @@ module main
 import os
 import strconv
 import json
-import vweb
+import veb
 import net.http
 import rand
 
@@ -13,7 +13,8 @@ fn main() {
 		n = strconv.atoi(os.args[1]) or { 10 }
 	}
 	port := int(rand.u32_in_range(20000, 50000) or { 23333 })
-	spawn vweb.run_at(&App{}, port: port, show_startup_message: false)
+	mut app := &App{}
+	spawn veb.run[App, Context](mut app, port)
 	url := 'http://localhost:${port}/api'
 	mut ch := chan int{cap: n}
 	for i in 1 .. (n + 1) {
@@ -34,18 +35,20 @@ fn send(url string, v int, ch chan int) {
 	}
 }
 
-struct App {
-	vweb.Context
+pub struct App {}
+
+struct Context {
+	veb.Context
 }
 
 @['/api'; post]
-pub fn (mut app App) api() vweb.Result {
-	data := json.decode(Payload, app.req.data) or {
+pub fn (mut app App) api(mut ctx Context) veb.Result {
+	data := json.decode(Payload, ctx.req.data) or {
 		Payload{
 			value: 0
 		}
 	}
-	return app.text('${data.value}')
+	return ctx.text(data.value.str())
 }
 
 struct Payload {
